@@ -3,9 +3,21 @@
 
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
+use std::io::Write;
 use tauri::{
     AppHandle, Manager, State, SystemTray, SystemTrayEvent, SystemTrayMenu, CustomMenuItem,
 };
+
+fn debug_log(msg: &str) {
+    let log_path = dirs_next::home_dir()
+        .unwrap_or_default()
+        .join(".posturexp")
+        .join("rust.log");
+    if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(&log_path) {
+        let _ = writeln!(f, "[{}] {}", std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs(), msg);
+    }
+}
 
 // ─── Shared state ────────────────────────────────────────────────────────────
 
@@ -24,16 +36,21 @@ async fn start_cv_service(
         return Ok(()); // already running
     }
 
+    debug_log("start_cv_service called");
+
     // new_sidecar() appends the target triple (e.g. -x86_64-pc-windows-msvc).
     // MSI bundlers strip the triple, so fall back to the plain binary name.
     let sidecar_cmd = tauri::api::process::Command::new_sidecar("posture-cv")
-        .or_else(|_| {
+        .map(|c| { debug_log("new_sidecar succeeded (triple-suffixed binary found)"); c })
+        .or_else(|e| {
+            debug_log(&format!("new_sidecar failed ({e}), trying plain name fallback"));
             let ext = if cfg!(windows) { ".exe" } else { "" };
             let bin = std::env::current_exe()
                 .map_err(|e| e.to_string())?
                 .parent()
                 .ok_or_else(|| "no exe parent".to_string())?
                 .join(format!("posture-cv{}", ext));
+            debug_log(&format!("fallback path: {}", bin.display()));
             Ok::<_, String>(tauri::api::process::Command::new(
                 bin.to_string_lossy().to_string(),
             ))
@@ -42,7 +59,8 @@ async fn start_cv_service(
 
     let (mut rx, child) = sidecar_cmd
         .spawn()
-        .map_err(|e| e.to_string())?;
+        .map(|r| { debug_log("sidecar spawned successfully"); r })
+        .map_err(|e| { debug_log(&format!("spawn failed: {e}")); e.to_string() })?;
 
     *lock = Some(child);
     drop(lock);
@@ -52,6 +70,7 @@ async fn start_cv_service(
         while let Some(event) = rx.recv().await {
             match event {
                 tauri::api::process::CommandEvent::Stdout(line) => {
+                    debug_log(&format!("stdout: {line}"));
                     // Each line is a JSON object with a "type" field.
                     if let Ok(val) = serde_json::from_str::<serde_json::Value>(&line) {
                         let event_name = val

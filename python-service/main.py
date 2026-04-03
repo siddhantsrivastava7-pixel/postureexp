@@ -24,6 +24,12 @@ def _emit(obj: dict):
         sys.stdout.write(json.dumps(obj) + "\n")
         sys.stdout.flush()
 
+# Debug log to file — confirms sidecar actually ran
+_log_dir = os.path.join(os.path.expanduser("~"), ".posturexp")
+os.makedirs(_log_dir, exist_ok=True)
+with open(os.path.join(_log_dir, "sidecar.log"), "a") as _lf:
+    _lf.write(f"[{time.time():.0f}] sidecar started, emitting service_ready\n")
+
 # Signal ready IMMEDIATELY — before any heavy imports that could be slow/crash
 _emit({"type": "service_ready"})
 
