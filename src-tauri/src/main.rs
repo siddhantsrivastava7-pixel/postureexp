@@ -24,8 +24,23 @@ async fn start_cv_service(
         return Ok(()); // already running
     }
 
-    let (mut rx, child) = tauri::api::process::Command::new_sidecar("posture-cv")
-        .map_err(|e| e.to_string())?
+    // new_sidecar() appends the target triple (e.g. -x86_64-pc-windows-msvc).
+    // MSI bundlers strip the triple, so fall back to the plain binary name.
+    let sidecar_cmd = tauri::api::process::Command::new_sidecar("posture-cv")
+        .or_else(|_| {
+            let ext = if cfg!(windows) { ".exe" } else { "" };
+            let bin = std::env::current_exe()
+                .map_err(|e| e.to_string())?
+                .parent()
+                .ok_or_else(|| "no exe parent".to_string())?
+                .join(format!("posture-cv{}", ext));
+            Ok::<_, String>(tauri::api::process::Command::new(
+                bin.to_string_lossy().to_string(),
+            ))
+        })
+        .map_err(|e: String| e)?;
+
+    let (mut rx, child) = sidecar_cmd
         .spawn()
         .map_err(|e| e.to_string())?;
 

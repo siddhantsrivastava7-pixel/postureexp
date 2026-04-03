@@ -21,7 +21,12 @@ export default function App() {
 
     (async () => {
       unsub = await subscribeCvEvents(dispatch);
-      await startCvService();
+      try {
+        await startCvService();
+      } catch (err) {
+        console.error("[App] failed to start CV service:", err);
+        alert(`Failed to start CV engine:\n${err}\n\nTry reinstalling the app.`);
+      }
     })();
 
     return () => {
