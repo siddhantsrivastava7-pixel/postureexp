@@ -81,7 +81,7 @@ jobs:
 
       # ── JS deps ──────────────────────────────────────────────────────────
       - name: Install JS dependencies
-        run: npm ci
+        run: npm install
 
       # ── Tauri build ──────────────────────────────────────────────────────
       - name: Build Tauri app
