@@ -61,7 +61,7 @@ export default function Spino({ posture, monitoring, size = 80 }: SpinoProps) {
         // Happy ^^ eyes
         <>
           <path d="M 32 15 Q 34 12 36 15" stroke={eyeColor} strokeWidth="2" strokeLinecap="round" fill="none"
-            transform={mood === "slouchy" ? "translate(-6,1)" : ""}/>
+            transform=""/>
           <path d="M 42 15 Q 44 12 46 15" stroke={eyeColor} strokeWidth="2" strokeLinecap="round" fill="none"/>
         </>
       ) : mood === "slouchy" ? (

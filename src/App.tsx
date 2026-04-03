@@ -1,4 +1,4 @@
-import { useReducer, useEffect, useCallback } from "react";
+import { useReducer, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { StoreContext, reducer, initialState } from "./lib/store";
 import { startCvService, subscribeCvEvents, cvCommands } from "./lib/cv-bridge";
@@ -37,8 +37,6 @@ export default function App() {
   }, [state.monitoringState]);
 
   // ── Sound effects on alerts ───────────────────────────────────────────
-  const prevAlertLen = useCallback(() => state.alerts.length, [state.alerts.length]);
-
   useEffect(() => {
     if (!state.settings.sound_alerts) return;
     if (state.alerts.length === 0) return;

@@ -2,7 +2,7 @@ import { useStore } from "../lib/store";
 import { cvCommands } from "../lib/cv-bridge";
 import { useEffect } from "react";
 import { formatDuration } from "../lib/utils";
-import { Flame, Zap, Star, Award, TrendingUp, CheckCircle } from "lucide-react";
+import { Flame, Zap, TrendingUp, CheckCircle } from "lucide-react";
 
 function StatCard({ label, value, sub, icon: Icon, color = "text-white" }: {
   label: string; value: string | number; sub?: string;

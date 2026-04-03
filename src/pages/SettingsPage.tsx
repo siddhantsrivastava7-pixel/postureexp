@@ -79,7 +79,6 @@ export default function SettingsPage() {
   const settings = state.settings;
 
   function update<K extends keyof AppSettings>(key: K, value: AppSettings[K]) {
-    const next = { ...settings, [key]: value };
     dispatch({ type: "SETTINGS_UPDATE", settings: { [key]: value } });
     cvCommands.updateSettings({ [key]: value });
   }

@@ -6,7 +6,7 @@ import { CheckCircle, Camera } from "lucide-react";
 const CALIBRATION_SECONDS = 9;
 
 export default function CalibrationModal() {
-  const { state, dispatch } = useStore();
+  const { dispatch } = useStore();
   const [countdown, setCountdown] = useState(CALIBRATION_SECONDS);
   const [done, setDone] = useState(false);
 

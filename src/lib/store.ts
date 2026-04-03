@@ -3,7 +3,7 @@
  * No external state library needed for MVP.
  */
 
-import { createContext, useContext, useReducer, Dispatch } from "react";
+import { createContext, useContext, Dispatch } from "react";
 import type { AppState, AppSettings, AlertEvent, StatsPayload, AchievementDetail } from "../types";
 
 // ── Default state ─────────────────────────────────────────────────────────
