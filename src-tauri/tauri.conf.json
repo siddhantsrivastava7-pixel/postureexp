@@ -52,7 +52,7 @@
         "icons/icon.icns",
         "icons/icon.ico"
       ],
-      "externalBin": ["../python-service/dist/posture-cv"]
+      "externalBin": ["binaries/posture-cv"]
     },
     "security": {
       "csp": null
