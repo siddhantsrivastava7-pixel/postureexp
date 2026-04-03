@@ -167,6 +167,9 @@ function handleCvEvent(event: CvEvent, dispatch: Dispatch<Action>) {
       if (event.msg === "camera_unavailable") {
         dispatch({ type: "SERVICE_STOPPED" });
         alert("Camera not found or access was denied.\n\nOn Windows: Settings → Privacy → Camera → allow PostureXP.\nThen restart the app.");
+      } else if (typeof event.msg === "string" && event.msg.startsWith("import_failed")) {
+        dispatch({ type: "SERVICE_STOPPED" });
+        alert(`CV engine failed to load:\n${event.msg}\n\nTry reinstalling the app. If the problem persists, your antivirus may be blocking posture-cv.exe.`);
       }
       break;
   }

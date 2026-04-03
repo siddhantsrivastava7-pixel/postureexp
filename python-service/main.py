@@ -15,14 +15,6 @@ import time
 import os
 import signal
 
-# Graceful shutdown on SIGTERM/SIGINT
-def _shutdown(sig, frame):
-    _emit({"type": "service_stopped"})
-    sys.exit(0)
-
-signal.signal(signal.SIGTERM, _shutdown)
-signal.signal(signal.SIGINT, _shutdown)
-
 # ── stdout helpers ────────────────────────────────────────────────────────────
 
 _stdout_lock = threading.Lock()
@@ -32,18 +24,32 @@ def _emit(obj: dict):
         sys.stdout.write(json.dumps(obj) + "\n")
         sys.stdout.flush()
 
-# ── lazy imports (keep startup fast) ─────────────────────────────────────────
+# Signal ready IMMEDIATELY — before any heavy imports that could be slow/crash
+_emit({"type": "service_ready"})
 
-import cv2
-import numpy as np
-import mediapipe as mp
+# ── Heavy imports (cv2/mediapipe can take 30-60s on first PyInstaller run) ────
 
-# ── sub-modules ───────────────────────────────────────────────────────────────
+try:
+    import cv2
+    import numpy as np
+    import mediapipe as mp
+    from detector.posture import PostureDetector
+    from detector.hand_face import HandFaceDetector
+    from calibration.manager import CalibrationManager
+    from storage.session import SessionStorage
+    _IMPORTS_OK = True
+except Exception as _import_err:
+    _emit({"type": "error", "msg": f"import_failed: {_import_err}"})
+    _IMPORTS_OK = False
 
-from detector.posture import PostureDetector
-from detector.hand_face import HandFaceDetector
-from calibration.manager import CalibrationManager
-from storage.session import SessionStorage
+# ── Graceful shutdown ─────────────────────────────────────────────────────────
+
+def _shutdown(sig, frame):
+    _emit({"type": "service_stopped"})
+    sys.exit(0)
+
+signal.signal(signal.SIGTERM, _shutdown)
+signal.signal(signal.SIGINT, _shutdown)
 
 # ── State ─────────────────────────────────────────────────────────────────────
 
@@ -301,15 +307,18 @@ def stdin_listener(storage: SessionStorage, calibration: CalibrationManager):
 # ── Entry point ───────────────────────────────────────────────────────────────
 
 def main():
+    if not _IMPORTS_OK:
+        # Keep stdin open so Tauri doesn't kill the process; errors already emitted
+        for _ in sys.stdin:
+            pass
+        return
+
     # Resolve data dir
     data_dir = os.path.join(os.path.expanduser("~"), ".posturexp")
     os.makedirs(data_dir, exist_ok=True)
 
     storage     = SessionStorage(data_dir)
     calibration = CalibrationManager(data_dir)
-
-    # Signal ready immediately — camera/ML init happens in background thread
-    _emit({"type": "service_ready"})
 
     # Camera thread (daemon so it dies with main)
     cam_thread = threading.Thread(
