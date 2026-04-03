@@ -107,8 +107,6 @@ def camera_loop(storage: SessionStorage, calibration: CalibrationManager):
         min_tracking_confidence=0.5,
     ) as face_mesh:
 
-        _emit({"type": "service_ready"})
-
         while True:
             if not state.monitoring or state.paused:
                 time.sleep(0.1)
@@ -309,6 +307,9 @@ def main():
 
     storage     = SessionStorage(data_dir)
     calibration = CalibrationManager(data_dir)
+
+    # Signal ready immediately — camera/ML init happens in background thread
+    _emit({"type": "service_ready"})
 
     # Camera thread (daemon so it dies with main)
     cam_thread = threading.Thread(

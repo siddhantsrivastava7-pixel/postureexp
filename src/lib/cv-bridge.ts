@@ -164,6 +164,10 @@ function handleCvEvent(event: CvEvent, dispatch: Dispatch<Action>) {
     }
     case "error":
       console.error("[cv-bridge] error:", event.msg);
+      if (event.msg === "camera_unavailable") {
+        dispatch({ type: "SERVICE_STOPPED" });
+        alert("Camera not found or access was denied.\n\nOn Windows: Settings → Privacy → Camera → allow PostureXP.\nThen restart the app.");
+      }
       break;
   }
 }
