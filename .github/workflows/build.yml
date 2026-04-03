@@ -1,0 +1,106 @@
+name: Build PostureXP
+
+on:
+  push:
+    tags:
+      - "v*"          # triggers on: git tag v0.1.0 && git push --tags
+  workflow_dispatch:  # also allows manual trigger from GitHub Actions tab
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows-latest
+            target: x86_64-pc-windows-msvc
+            py-bin: posture-cv.exe
+            bin-name: posture-cv-x86_64-pc-windows-msvc.exe
+
+          - platform: macos-latest
+            target: x86_64-apple-darwin
+            py-bin: posture-cv
+            bin-name: posture-cv-x86_64-apple-darwin
+
+          - platform: macos-latest
+            target: aarch64-apple-darwin
+            py-bin: posture-cv
+            bin-name: posture-cv-aarch64-apple-darwin
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      # ── Checkout ────────────────────────────────────────────────────────
+      - uses: actions/checkout@v4
+
+      # ── Node.js ─────────────────────────────────────────────────────────
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # ── Rust ────────────────────────────────────────────────────────────
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      # ── Python ──────────────────────────────────────────────────────────
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: python-service/requirements.txt
+
+      # ── Build Python sidecar ─────────────────────────────────────────────
+      - name: Install Python deps
+        working-directory: python-service
+        run: python -m pip install -r requirements.txt
+
+      - name: Build sidecar (PyInstaller)
+        working-directory: python-service
+        run: >
+          python -m PyInstaller
+          --onefile
+          --name posture-cv
+          --collect-data mediapipe
+          main.py
+
+      - name: Install sidecar into Tauri binaries
+        shell: bash
+        run: |
+          mkdir -p src-tauri/binaries
+          cp python-service/dist/${{ matrix.py-bin }} src-tauri/binaries/${{ matrix.bin-name }}
+
+      # ── JS deps ──────────────────────────────────────────────────────────
+      - name: Install JS dependencies
+        run: npm ci
+
+      # ── Tauri build ──────────────────────────────────────────────────────
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: "PostureXP ${{ github.ref_name }}"
+          releaseBody: |
+            ## PostureXP ${{ github.ref_name }}
+
+            ### Install
+            - **Windows**: download `.msi` → double-click to install
+            - **macOS Intel**: download `.dmg` (x86_64)
+            - **macOS Apple Silicon**: download `.dmg` (aarch64)
+
+            ### What's new
+            See commit history for changes.
+          releaseDraft: false
+          prerelease: false
+          args: --target ${{ matrix.target }}

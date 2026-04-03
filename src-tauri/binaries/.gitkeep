@@ -1,0 +1,9 @@
+# Place the PyInstaller-built sidecar binary here with the Tauri target triple suffix.
+# Examples:
+#   posture-cv-x86_64-apple-darwin      (macOS Intel)
+#   posture-cv-aarch64-apple-darwin     (macOS Apple Silicon)
+#   posture-cv-x86_64-pc-windows-msvc.exe  (Windows)
+#   posture-cv-x86_64-unknown-linux-gnu    (Linux)
+#
+# Run python-service/build_sidecar.sh to generate the binary,
+# then rename and copy it here.
