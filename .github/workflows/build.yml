@@ -6,6 +6,9 @@ on:
       - "v*"          # triggers on: git tag v0.1.0 && git push --tags
   workflow_dispatch:  # also allows manual trigger from GitHub Actions tab
 
+permissions:
+  contents: write
+
 jobs:
   build:
     strategy:
